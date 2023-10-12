@@ -16,6 +16,7 @@ struct history_command{
     time_t current_time_of_execution;
     time_t end_time_of_execution;
     time_t duration_of_execution;
+    time_t wait_time;
 };
 
 int sig_terminate = 0;
@@ -23,7 +24,7 @@ struct history_command command_history[100];
 int history_index=-1;
 
 /////////////
-struct history_command ready_que[4];
+struct history_command que[4];
 int job_num[4];
 int curr_prior = 1;
 int NCPU = 1;
@@ -214,14 +215,14 @@ void background(){
 ////////
 void add_job(const char* command, int priority) {
     int priority = 1;
-    int idx = priority - 1;
-    if (job_num[idx] >= NCPU) {
+    int index = priority - 1;
+    if (job_num[index] >= NCPU) {
         printf("Priority %d queue is full, cannot add job: %s\n", priority, command);
     }
-    else if (job_num[idx] < NCPU){
-        strcpy_s(ready_que[idx].nam, command);
-        ready_que[idx].priority = priority;
-        job_num[idx]++;
+    else if (job_num[index] < NCPU){
+        strcpy_s(que[index].nam, command);
+        que[index].priority = priority;
+        job_num[index]++;
         priority++;
     }
     else{
@@ -229,26 +230,38 @@ void add_job(const char* command, int priority) {
     }
 }
 void execute_job() {
-    int idx =curr_prior- 1;
-    if (job_num[idx] > 0) {
+    int index2 =curr_prior- 1;
+    if (job_num[index2] > 0) {
         pid_t child_pid = fork();
-        if (job_num[idx] > 0 && child_pid == 0) {
-            execlp("/bin/sh", "sh", "-c", ready_que[idx].nam, (char *)NULL);
-            printf("Error");
+        if (job_num[index2] > 0 && child_pid == 0) {
+            execlp("/bin/sh", "sh", "-c", que[index2].nam, (char *)NULL);//
+            printf("Error");//
             exit(EXIT_FAILURE);
         } 
         else if (child_pid != 0 || child_pid != -1) {
-            ready_que[curr_prior-1].pid = child_pid;
+            que[curr_prior-1].pid = child_pid;
             time_t start_time;
             time(&start_time);
             waitpid(child_pid, NULL, 0);
             time_t end_time;
             time(&end_time);
-            ready_que[curr_prior-1].duration_of_execution += end_time - start_time;
-
+            que[curr_prior -1].wait_time += start_time-end_time;
+            que[curr_prior-1].duration_of_execution += end_time - start_time;
             job_num[curr_prior-1] = job_num[curr_prior-1] -1;
         }
+        else{
+            printf("ERRROR");
+        }
     }
+    else{
+        printf("ERRROR");
+    }
+}
+
+void switch_priority(int signal) {
+    int prio = curr_prior % 4;
+    curr_prior = prio + 1;
+    alarm(TSLICE);//
 }
 
 ////////
@@ -274,9 +287,10 @@ int main(int argc, char* argv[])
 {
     int NCPU;
     int TSLICE;
-    if (argc ==3){
+    if (argc ==4){
         int NCPU = atoi(argv[1]);
         int TSLICE = atoi(argv[2]);
+        int priority = atoi(argv[3]);
         if (sscanf(argv[1], "%d", &NCPU) != 1 || sscanf(argv[2], "%d", &TSLICE) != 1) {
             printf("ERROR");
         }
@@ -284,6 +298,27 @@ int main(int argc, char* argv[])
     else{
         printf("Error");
     }
+
+    int i=0;
+    while(i<4){
+        job_num[1]=0;
+        i++;
+    }
+
+    if (signal(SIGINT, switch_priority) == SIG_ERR) {
+        printf("ERROR");
+    }
+    else{
+        signal(SIGALRM, switch_priority);
+        alarm(TSLICE);
+    }
+
+    // while(1){
+    //     char command[100];
+    //     getchar();
+    //     fgets(command , 100 , stdin);
+
+    //     }
     shell_loop(NCPU,TSLICE);
     return 0;
 }
