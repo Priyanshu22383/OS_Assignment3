@@ -217,7 +217,7 @@ void add_job(const char* command, int priority) {
     int priority = 1;
     int index = priority - 1;
     if (job_num[index] >= NCPU) {
-        printf("Priority %d queue is full, cannot add job: %s\n", priority, command);
+        printf("Priority %d queue is full %s\n", priority, command);
     }
     else if (job_num[index] < NCPU){
         strcpy_s(que[index].nam, command);
