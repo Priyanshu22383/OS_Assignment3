@@ -106,4 +106,5 @@ Program shell core where it takes the user commands provides an environment for 
 9.int main();
 Serves as the entry point of the shell loop.
 	Takes user input of NCPU and TSLICE value and checks the value at each index of command line entered and return it to Shell to further execute process.
+ 
 : ---Contributions: --- 1. Prakhar Agrawal - Programmed the main code of the Simple Scheduler along with making it capable to recieve and execute various commands given as input. Functions programmed includes developing a main_shell enviornment, creating an array, taking NCPU and TSLIC values as input, preparing the test file, defining conditions etc. 2. Priyanshu Yadav - Helped in coding for the shared memory part and writing the content of readme file.
